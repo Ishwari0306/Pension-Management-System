@@ -14,10 +14,11 @@ const adminSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  adminPrivileges: {
-    type: [String],
-    default: [],
-  },
+  companyId:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref:"Company",
+    required:true,
+  }
 });
 
 const adminModel = mongoose.model('admin', adminSchema);

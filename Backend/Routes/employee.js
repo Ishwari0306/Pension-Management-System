@@ -75,11 +75,11 @@ employeeRouter.post("/signin",async(req,res)=>{
     });
 
     if(employee){
-        const passwordMatch=await bcrypt.compare(password,admin.password);
+        const passwordMatch=await bcrypt.compare(password,employee.password);
         
             if(passwordMatch){
                 const token=jwt.sign({
-                id:admin.employeeId,
+                id:employee.employeeId,
                 },JWT_admin_secret);
                 res.json({
                     token:token,
