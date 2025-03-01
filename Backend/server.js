@@ -21,6 +21,8 @@ app.use(express.json());
 app.use("/PMS/admin",adminRouter);
 app.use("/PMS/employee",employeeRouter);
 
+
+
 async function main(){
     await mongoose.connect(process.env.MONGO_URI);
     app.listen(PORT,()=>console.log("Server started!!"));

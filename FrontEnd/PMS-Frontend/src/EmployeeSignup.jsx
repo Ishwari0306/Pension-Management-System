@@ -6,6 +6,7 @@ export default function EmployeeSignup() {
   const [password, setPassword] = useState("");
   const [salary, setSalary] = useState(0);
   const [dateOfJoining, setDateOfJoining] = useState("");
+  const [companyId,setCompanyId]=useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
@@ -23,6 +24,7 @@ export default function EmployeeSignup() {
           password,
           salary,
           dateOfJoining, 
+          companyId
         }),
       });
 
@@ -39,6 +41,7 @@ export default function EmployeeSignup() {
       setSalary(0);
       setDateOfJoining("");
       setError("");
+      setCompanyId("");
     } catch (err) {
       console.error("Error during employee signup:", err);
       setError("Failed to sign up. Please try again.");
@@ -99,6 +102,15 @@ export default function EmployeeSignup() {
           required
         />
       </div>
+      <select 
+        value={companyId}
+        onChange={(e)=>setCompanyId(e.target.value)}
+        required
+      >
+        <option value="">Select Company</option>
+        <option value="Company_A_ID">Company A</option>
+        <option value="Company_B_ID">Company B</option>
+      </select>
       <button type="submit" className="submit-button">
         Sign Up
       </button>

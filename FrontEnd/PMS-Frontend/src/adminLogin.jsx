@@ -3,11 +3,45 @@ import { useState } from "react"
 export default function AdminLogin() {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
+    const [error,setError]=useState("");
   
-    const handleSubmit = (e) => {
+    const handleSubmit = async(e) => {
       e.preventDefault()
-      // Implement admin login logic here
-      console.log("Admin login:", { email, password })
+      try{
+        
+         const response=await fetch("http://localhost:5000/PMS/admin/signin",{
+          method:"POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                email,
+                password
+            }),
+         });
+
+         if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data=await response.json();
+        console.log("Login Successful:",data);
+
+        localStorage.setItem("token",data.token);
+
+        setError("");
+        alert("Login successful!");
+
+      }
+
+      catch(err){
+
+        console.error("Error during login:", err);
+        setError("Invalid email or password. Please try again.");
+
+      }
+    
     }
   
     return (

@@ -26,6 +26,11 @@ const EmployeeSchema=new mongoose.Schema({
         type: Number,
         required: true
     },
+    companyId:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"Company",
+        required:true,
+    },
     pensionPlan:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'Pension Plan',

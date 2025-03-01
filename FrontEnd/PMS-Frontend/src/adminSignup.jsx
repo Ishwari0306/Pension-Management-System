@@ -1,37 +1,72 @@
-"use client"
-
-import { useState } from "react"
+import { useState } from "react";
 
 export default function AdminSignup() {
-    const [name, setName] = useState("")
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
-  
-    const handleSubmit = (e) => {
-      e.preventDefault()
-      // Implement admin signup logic here
-      console.log("Admin signup:", { name, email, password })
-    }
-  
-    return (
-      <form onSubmit={handleSubmit}>
-        <h2 className="login-subtitle">Admin Signup</h2>
-        <div className="form-group">
-          <label htmlFor="name">Name</label>
-          <input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-        </div>
-        <div className="form-group">
-          <label htmlFor="email">Email</label>
-          <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </div>
-        <div className="form-group">
-          <label htmlFor="password">Password</label>
-          <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </div>
-        <button type="submit" className="submit-button">
-          Sign Up
-        </button>
-      </form>
-    )
-  }
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [error, setError] = useState("");
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch("http://localhost:5000/PMS/admin/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, password, companyName }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create admin");
+      }
+
+      const data = await response.json();
+      console.log("Admin created:", data);
+      setError("");
+    } catch (err) {
+      console.error("Error creating admin:", err);
+      setError("Failed to create admin");
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h2>Admin Signup</h2>
+      {error && <p>{error}</p>}
+      <input
+        type="text"
+        placeholder="Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        required
+      />
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+      />
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      />
+      <select
+        value={companyName}
+        onChange={(e) => setCompanyName(e.target.value)}
+        required
+      >
+        <option value="">Select Company</option>
+        <option value="Company A">Company A</option>
+        <option value="Company B">Company B</option>
+      </select>
+      <button type="submit">Sign Up</button>
+    </form>
+  );
+}

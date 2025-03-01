@@ -27,12 +27,15 @@ employeeRouter.post("/signup",async(req,res)=>{
     const password=req.body.password;
     let dateOfJoining=req.body.dateOfJoining;
     const employeeId=await generateUniqueEmployeeID();
+    const companyId=req.body.companyId;
     const date=new Date(dateOfJoining);
+
     if(isNaN(date)){
         return res.status(400).json({
             error:"Invalid Date Format"
         });
     }
+
     const datetoJoin=date.toISOString();
     const salary=req.body.salary; 
 
@@ -48,6 +51,7 @@ employeeRouter.post("/signup",async(req,res)=>{
             dateOfJoining:datetoJoin,
             employeeId:employeeId, 
             salary:salary,
+            companyId:companyId,
         });
 
     }
@@ -79,7 +83,8 @@ employeeRouter.post("/signin",async(req,res)=>{
         
             if(passwordMatch){
                 const token=jwt.sign({
-                id:employee.employeeId,
+                    id:employee.employeeId,
+                    companyId:employee.companyId,
                 },JWT_admin_secret);
                 res.json({
                     token:token,
