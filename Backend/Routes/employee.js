@@ -2,8 +2,10 @@ const {Router}=require("express");
 const employeeRouter=Router();
 const jwt=require("jsonwebtoken");
 const employeeModel=require("../models/EmployeeModel");
+const CompanyModel=require("../models/CompanyModel");
 const bcrypt=require("bcrypt");
 const { v4:uuidv4 }=require('uuid');
+const EmployeeModel = require("../models/EmployeeModel");
 
 const JWT_admin_secret="hash123";
 
@@ -27,7 +29,7 @@ employeeRouter.post("/signup",async(req,res)=>{
     const password=req.body.password;
     let dateOfJoining=req.body.dateOfJoining;
     const employeeId=await generateUniqueEmployeeID();
-    const companyId=req.body.companyId;
+    const companyName=req.body.companyName;
     const date=new Date(dateOfJoining);
 
     if(isNaN(date)){
@@ -38,33 +40,40 @@ employeeRouter.post("/signup",async(req,res)=>{
 
     const datetoJoin=date.toISOString();
     const salary=req.body.salary; 
-
-    let errorThrown=false;
+    
 
     try{
+
+        const exisitingEmp=await EmployeeModel.findOne({ email });
+        if(exisitingEmp){
+            return res.status(400).json({ msg:"Employee Already Exists"});
+        }
+
+        const company=await CompanyModel.findOne({name:companyName});
+        if(!company){
+            return res.status(404).json({ msg: "Company not found" });
+        }
+
         const hashedPassword=await bcrypt.hash(password,5);
         
-        await employeeModel.create({
+        const newEmployee=await employeeModel.create({
             name:name,
             email:email,
             password:hashedPassword,
             dateOfJoining:datetoJoin,
             employeeId:employeeId, 
             salary:salary,
-            companyId:companyId,
+            companyId:company._id,
         });
+        res.status(201).json({
+            msg: "Employee created successfully",
+            employee: newEmployee,
+          });
 
     }
     catch(err){
-        return res.json({
-            msg:"Your signup has failed"
-        });
-        errorThrown=true;
-    }
-    if(!errorThrown){
-        res.json({
-            msg:"You are logged in"
-        });
+        console.error("Error during employee signup:", err);
+        res.status(500).json({ msg: "Failed to create employee" });
     }
 
 });
@@ -107,6 +116,8 @@ employeeRouter.post("/signin",async(req,res)=>{
     }
 
 })
+
+
 
 
 module.exports={

@@ -6,7 +6,7 @@ export default function EmployeeSignup() {
   const [password, setPassword] = useState("");
   const [salary, setSalary] = useState(0);
   const [dateOfJoining, setDateOfJoining] = useState("");
-  const [companyId,setCompanyId]=useState("");
+  const [companyName,setCompanyName]=useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
@@ -24,7 +24,7 @@ export default function EmployeeSignup() {
           password,
           salary,
           dateOfJoining, 
-          companyId
+          companyName,
         }),
       });
 
@@ -35,13 +35,8 @@ export default function EmployeeSignup() {
       const data = await response.json();
       console.log("Employee signup successful:", data);
 
-      setName("");
-      setEmail("");
-      setPassword("");
-      setSalary(0);
-      setDateOfJoining("");
       setError("");
-      setCompanyId("");
+    
     } catch (err) {
       console.error("Error during employee signup:", err);
       setError("Failed to sign up. Please try again.");
@@ -102,15 +97,18 @@ export default function EmployeeSignup() {
           required
         />
       </div>
+      <div className="form-group">
+      <label htmlFor="companyName">Company</label>
       <select 
-        value={companyId}
-        onChange={(e)=>setCompanyId(e.target.value)}
+        value={companyName}
+        onChange={(e)=>setCompanyName(e.target.value)}
         required
       >
         <option value="">Select Company</option>
-        <option value="Company_A_ID">Company A</option>
-        <option value="Company_B_ID">Company B</option>
+        <option value="Company A">Company A</option>
+        <option value="Company B">Company B</option>
       </select>
+      </div>
       <button type="submit" className="submit-button">
         Sign Up
       </button>

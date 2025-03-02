@@ -3,6 +3,8 @@ const adminRouter=Router();
 const jwt=require("jsonwebtoken");
 const adminModel=require("../models/adminModel");
 const CompanyModel=require("../models/CompanyModel");
+const EmployeeModel=require("../models/EmployeeModel");
+const { authenticate }=require("../middlewares/adminAuth");
 const bcrypt=require("bcrypt");
 
 const JWT_admin_secret="hash123";
@@ -91,6 +93,23 @@ adminRouter.post("/signin",async(req,res)=>{
     catch(err){
         console.error("Error during admin login:", err);
         res.status(500).json({ msg: "Failed to log in" });
+    }
+
+});
+
+adminRouter.get("/employees",authenticate,async(req,res)=>{
+
+    const { companyId }=req.user;
+
+    try{
+        const employees=await EmployeeModel.find( {companyId} );
+        res.json({
+            employees
+        });
+    }
+    catch(err){
+        console.error("Error fetching employees:", err);
+        res.status(500).json({ msg: "Failed to fetch employees" });
     }
 
 });
