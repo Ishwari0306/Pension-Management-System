@@ -37,10 +37,18 @@ adminRouter.post("/signup",async(req,res)=>{
             companyId:company._id
         });
 
-        res.status(201).json({
-            msg:"Admin created Successfully",
+        const token=jwt.sign({
+            id:admin._id,
+            companyId:admin.companyId,
+        },JWT_admin_secret);
+        
+        return res.status(201).json({
+            token:token,
+            msg:"Admin has been logged in",
             admin:newAdmin
         });
+
+        
 
     }
     catch(err){
@@ -70,7 +78,7 @@ adminRouter.post("/signin",async(req,res)=>{
                     id:admin._id,
                     companyId:admin.companyId,
                 },JWT_admin_secret);
-                res.json({
+                return res.json({
                     token:token,
                     msg:"Admin has been logged in"
                 });

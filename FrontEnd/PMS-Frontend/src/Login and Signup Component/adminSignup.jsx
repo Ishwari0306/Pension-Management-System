@@ -1,15 +1,16 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function AdminSignup() {
+export default function AdminSignup({ onAuthSuccess }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const response = await fetch("http://localhost:5000/PMS/admin/signup", {
         method: "POST",
@@ -26,6 +27,9 @@ export default function AdminSignup() {
       const data = await response.json();
       console.log("Admin created:", data);
       setError("");
+
+      localStorage.setItem("token", data.token); // Store token in localStorage
+      onAuthSuccess(); // Navigate to home page
     } catch (err) {
       console.error("Error creating admin:", err);
       setError("Failed to create admin");

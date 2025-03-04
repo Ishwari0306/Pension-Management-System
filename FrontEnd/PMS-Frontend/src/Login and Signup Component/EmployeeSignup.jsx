@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function EmployeeSignup() {
+export default function EmployeeSignup({onAuthSuccess}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -8,6 +9,7 @@ export default function EmployeeSignup() {
   const [dateOfJoining, setDateOfJoining] = useState("");
   const [companyName,setCompanyName]=useState("");
   const [error, setError] = useState("");
+  const navigate=useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,6 +38,9 @@ export default function EmployeeSignup() {
       console.log("Employee signup successful:", data);
 
       setError("");
+      localStorage.setItem("token",data.token);
+
+      onAuthSuccess();
     
     } catch (err) {
       console.error("Error during employee signup:", err);

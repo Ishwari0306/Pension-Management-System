@@ -7,7 +7,7 @@ const bcrypt=require("bcrypt");
 const { v4:uuidv4 }=require('uuid');
 const EmployeeModel = require("../models/EmployeeModel");
 
-const JWT_admin_secret="hash123";
+const JWT_employee_secret="hash123";
 
 async function generateUniqueEmployeeID() {
     let isUnique = false;
@@ -65,10 +65,19 @@ employeeRouter.post("/signup",async(req,res)=>{
             salary:salary,
             companyId:company._id,
         });
-        res.status(201).json({
-            msg: "Employee created successfully",
+
+        const token=jwt.sign({
+            id:newEmployee.employeeId,
+            companyId:newEmployee.companyId,
+        },JWT_employee_secret);
+
+
+        return res.status(201).json({
+            token:token,
+            msg:"Employee has been logged in",
             employee: newEmployee,
-          });
+        });
+        
 
     }
     catch(err){
@@ -94,11 +103,11 @@ employeeRouter.post("/signin",async(req,res)=>{
                 const token=jwt.sign({
                     id:employee.employeeId,
                     companyId:employee.companyId,
-                },JWT_admin_secret);
+                },JWT_employee_secret);
                 res.json({
                     token:token,
-                    msg:"Admin has been logged in"
-                })
+                    msg:"Employee has been logged in"
+                });
             }
             else{
                 return res.status(403).json({
@@ -106,8 +115,7 @@ employeeRouter.post("/signin",async(req,res)=>{
                 })
             }
     }
-    else{
-        
+    else{      
         res.status(403).json({
             msg:"User does not exist"
         });

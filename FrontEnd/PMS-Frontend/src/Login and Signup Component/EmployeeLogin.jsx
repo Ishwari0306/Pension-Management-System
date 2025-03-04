@@ -1,12 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import { useNavigate } from "react-router-dom";
 
-export default function EmployeeLogin() {
+export default function EmployeeLogin({ onAuthSuccess }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error,setError]=useState("");
-  
+    const navigate=useNavigate();
+
     const handleSubmit = async(e) => {
       e.preventDefault()
       
@@ -36,10 +38,12 @@ export default function EmployeeLogin() {
         setError("");
         alert("Login successful!");
 
+        onAuthSuccess();
+
         } 
         catch (err) {
-        console.error("Error during login:", err);
-        setError("Invalid email or password. Please try again.");
+          console.error("Error during login:", err);
+          setError("Invalid email or password. Please try again.");
 
       }
     };
