@@ -38,17 +38,15 @@ adminRouter.post("/signup",async(req,res)=>{
         });
 
         const token=jwt.sign({
-            id:admin._id,
-            companyId:admin.companyId,
+            id:newAdmin._id,
+            companyId:newAdmin.companyId,
         },JWT_admin_secret);
         
         return res.status(201).json({
             token:token,
             msg:"Admin has been logged in",
             admin:newAdmin
-        });
-
-        
+        });  
 
     }
     catch(err){
@@ -111,9 +109,9 @@ adminRouter.get("/employees",authenticate,async(req,res)=>{
 
     try{
         const employees=await EmployeeModel.find( {companyId} );
-        res.json({
+        res.json(
             employees
-        });
+        );
     }
     catch(err){
         console.error("Error fetching employees:", err);
@@ -121,6 +119,114 @@ adminRouter.get("/employees",authenticate,async(req,res)=>{
     }
 
 });
+
+
+adminRouter.get("/profile", authenticate, async (req, res) => {
+    try {
+      const { companyId } = req.user;
+      const admin = await adminModel.findOne({ companyId });
+      
+      if (!admin) {
+        return res.status(404).json({ msg: "Admin not found" });
+      }
+
+      const company = await CompanyModel.findById(companyId);
+
+      if (!company) {
+        return res.status(404).json({ msg: "Company not found" });
+      }
+
+      const totalEmployees = await EmployeeModel.countDocuments( {companyId} );
+
+      res.json({
+          name: company.name,
+          totalEmployees,
+          activeSchemes: company.activeSchemes || 0,
+      });
+      
+    } catch (err) {
+      console.error("Error fetching admin profile:", err);
+      res.status(500).json({ msg: "Failed to fetch profile" });
+    }
+});
+
+
+adminRouter.post("/accept-employee/:employeeId",authenticate,async(req,res) => {
+    try{
+        const { employeeId } = req.params;
+        
+        const UpdatedEmployee = await EmployeeModel.findByIdAndUpdate(
+            employeeId,
+            { status: "Accepted" },
+            { new: true }
+        );
+
+        if(!UpdatedEmployee){
+            return res.status(404).json({ msg: "Employee not found" });
+        }
+
+        res.json({ msg: "Employee accepted", employee: UpdatedEmployee });
+        } catch (err) {
+            console.error("Error accepting employee:", err);
+            res.status(500).json({ msg: "Failed to accept employee" });
+        }
+
+});
+
+
+adminRouter.post("/decline-employee/:employeeId",authenticate,async(req,res) => {
+        
+    try{
+
+        const { employeeId }=req.params;
+
+        const UpdatedEmployee=await EmployeeModel.findByIdAndUpdate(
+            employeeId,
+            { status: "Rejected"},
+            { new:true },
+        )
+
+        if (!updatedEmployee) {
+            return res.status(404).json({ msg: "Employee not found" });
+        }
+
+        res.json({ msg: "Employee declined", employee: updatedEmployee });
+        } catch (err) {
+            console.error("Error declining employee:", err);
+            res.status(500).json({ msg: "Failed to decline employee" });
+        }
+});
+
+
+adminRouter.post("/manage-pension-application",authenticate,async (req, res) => {
+    try {
+        const { employeeId, schemeId, status, adminNote } = req.body;
+
+        const employee = await EmployeeModel.findById(employeeId);
+        if (!employee) {
+            return res.status(404).json({ msg: "Employee not found" });
+        }
+
+        const appliedScheme = employee.appliedSchemes.find(
+            (scheme) => scheme.schemeId.toString() === schemeId
+        );
+        if (!appliedScheme) {
+            return res.status(404).json({ msg: "Pension scheme application not found" });
+        }
+
+
+        appliedScheme.status = status;
+        appliedScheme.adminNote = adminNote;
+
+        await employee.save();
+
+        res.json({ msg: "Application updated successfully", employee });
+    } catch (err) {
+        console.error("Error managing application:", err);
+        res.status(500).json({ msg: "Failed to manage application" });
+    }
+});
+
 
 module.exports={
     adminRouter:adminRouter,

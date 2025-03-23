@@ -34,6 +34,7 @@ export default function EmployeeLogin({ onAuthSuccess }) {
         console.log("Login Successful:",data);
 
         localStorage.setItem("token",data.token);
+        localStorage.setItem("userRole","employee");
 
         setError("");
         alert("Login successful!");

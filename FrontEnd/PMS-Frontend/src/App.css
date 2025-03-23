@@ -1,12 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap");
 
 :root {
+
   --primary-color: #3498db;
   --secondary-color: #2ecc71;
   --background-color: #f0f3f6;
   --card-background: #ffffff;
   --text-color: #333333;
   --button-text-color: #ffffff;
+
 }
 
 body {
@@ -21,7 +23,7 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #3498db, #8e44ad);
+  background: linear-gradient(140deg, #70566D, #DAF7DC)
 }
 
 .login-card {
@@ -56,11 +58,16 @@ body {
   font-weight: 600;
   padding: 0.5rem 1rem;
   transition: all 0.3s ease;
+  border-radius: 20px; /* Add border-radius for consistency */
+}
+
+.toggle-button:hover {
+  background-color: var(--primary-color);
+  color: var(--button-text-color);
 }
 
 .toggle-button.active {
   background-color: var(--primary-color);
-  border-radius: 20px;
   color: var(--button-text-color);
 }
 
@@ -71,6 +78,66 @@ form {
 
 .form-group {
   margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+}
+
+.form-group select {
+  width: 100%;
+  padding: 0.8rem;
+  font-size: 1rem;
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  background-color: var(--card-background);
+  color: var(--text-color);
+  appearance: none; /* Remove default arrow */
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* Custom dropdown arrow */
+.form-group select {
+  background-image: url("data:image/svg+xml;charset=UT…%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.8rem center;
+  background-size: 12px;
+}
+
+/* Hover effect */
+.form-group select:hover {
+  border-color: var(--secondary-color);
+}
+
+/* Focus effect */
+.form-group select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+  outline: none;
+}
+
+/* Disabled state */
+.form-group select:disabled {
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+}
+
+/* Styling the dropdown options */
+.form-group select option {
+  padding: 0.5rem;
+  background-color: var(--card-background);
+  color: var(--text-color);
+}
+
+/* Styling the dropdown when open */
+.form-group select:active,
+.form-group select:focus {
+  background-color: var(--card-background);
 }
 
 label {

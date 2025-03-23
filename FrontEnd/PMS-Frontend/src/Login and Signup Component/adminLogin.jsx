@@ -30,6 +30,7 @@ export default function AdminLogin({ onAuthSuccess }) {
       console.log("Login Successful:", data);
 
       localStorage.setItem("token", data.token); // Store token in localStorage
+      localStorage.setItem("userRole","admin");
       setError("");
       alert("Login successful!");
 

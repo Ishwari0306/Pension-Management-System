@@ -3,9 +3,11 @@ const employeeRouter=Router();
 const jwt=require("jsonwebtoken");
 const employeeModel=require("../models/EmployeeModel");
 const CompanyModel=require("../models/CompanyModel");
+const PensionModel=require("../models/PensionModel");
 const bcrypt=require("bcrypt");
 const { v4:uuidv4 }=require('uuid');
-const EmployeeModel = require("../models/EmployeeModel");
+const { authenticate }=require("../middlewares/employeeAuth");
+
 
 const JWT_employee_secret="hash123";
 
@@ -44,7 +46,7 @@ employeeRouter.post("/signup",async(req,res)=>{
 
     try{
 
-        const exisitingEmp=await EmployeeModel.findOne({ email });
+        const exisitingEmp=await employeeModel.findOne({ email });
         if(exisitingEmp){
             return res.status(400).json({ msg:"Employee Already Exists"});
         }
@@ -119,12 +121,95 @@ employeeRouter.post("/signin",async(req,res)=>{
         res.status(403).json({
             msg:"User does not exist"
         });
-        return;
-        
+        return;       
     }
 
-})
+});
 
+employeeRouter.get("/profile", authenticate, async (req, res) => {
+    try {
+      const { id } = req.user; // This should be the employeeId from the token
+      const employee = await employeeModel.findOne({ employeeId: id });
+      
+      if (!employee) {
+        return res.status(404).json({ msg: "Employee not found" });
+      }
+      
+      res.json(employee);
+    } catch (err) {
+      console.error("Error fetching employee profile:", err);
+      res.status(500).json({ msg: "Failed to fetch profile" });
+    }
+});
+
+employeeRouter.get("/pension-schemes",authenticate,async(req,res)=>{
+    try{
+        const schemes=await PensionModel.find({});
+        res.json(schemes);
+    }catch(err){
+        console.error("Error fetching pension schemes:", err);
+        res.status(500).json({ msg: "Failed to fetch pension schemes" });
+    }
+});
+
+employeeRouter.post("/apply-pension-scheme",authenticate,async(req,res)=>{
+    
+    try {
+        const { schemeId, investmentAmount } = req.body;
+        const employeeId = req.user.id;
+
+
+        const scheme = await PensionModel.findById(schemeId);
+        if (!scheme) {
+            return res.status(404).json({ msg: "Pension scheme not found" });
+        }
+
+
+        if (investmentAmount < scheme.minimumInvestment || investmentAmount > scheme.maximumInvestment) {
+            return res.status(400).json({ msg: "Investment amount is out of range" });
+        }
+
+
+        const employee = await employeeModel.findOne({ employeeId });
+        if (!employee) {
+            return res.status(404).json({ msg: "Employee not found" });
+        }
+
+        // Add the scheme to the employee's applied schemes
+        employee.appliedSchemes.push({
+            schemeId: scheme._id,
+            schemeName: scheme.name,
+            investmentAmount,
+            status: "Pending", 
+            appliedAt: new Date(),
+        });
+
+        await employee.save();
+
+        res.json({ msg: "Pension scheme applied successfully", employee });
+    } catch (err) {
+        console.error("Error applying for pension scheme:", err);
+        res.status(500).json({ msg: "Failed to apply for pension scheme" });
+    }
+
+});
+
+employeeRouter.get("/applied-schemes", authenticate, async (req, res) => {
+    try {
+        const employeeId = req.user.id; 
+
+        const employee = await employeeModel.findOne({ employeeId });
+
+        if (!employee) {
+            return res.status(404).json({ msg: "Employee not found" });
+        }
+
+        res.json(employee.appliedSchemes);
+    } catch (err) {
+        console.error("Error fetching applied schemes:", err);
+        res.status(500).json({ msg: "Failed to fetch applied schemes" });
+    }
+});
 
 
 

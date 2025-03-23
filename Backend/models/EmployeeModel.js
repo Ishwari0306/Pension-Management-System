@@ -31,10 +31,31 @@ const EmployeeSchema=new mongoose.Schema({
         ref:"Company",
         required:true,
     },
-    pensionPlan:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:'Pension Plan',
+    status: {
+        type: String,
+        enum: ["Pending", "Accepted", "Rejected"],
+        default: "Pending",
     },
+    appliedSchemes: [
+        {
+            schemeId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "PensionScheme",
+            },
+            schemeName: String,
+            investmentAmount: Number,
+            status: {
+                type: String,
+                enum: ["Pending", "Accepted", "Rejected"],
+                default: "Pending",
+            },
+            adminNote: String, 
+            appliedAt: {
+                type: Date,
+                default: Date.now,
+            },
+        },
+    ],
 });
 
 const EmployeeModel=mongoose.model("Employee",EmployeeSchema);

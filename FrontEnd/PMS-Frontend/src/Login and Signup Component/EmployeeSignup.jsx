@@ -39,6 +39,8 @@ export default function EmployeeSignup({onAuthSuccess}) {
 
       setError("");
       localStorage.setItem("token",data.token);
+      localStorage.setItem("userRole","employee");
+
 
       onAuthSuccess();
     
