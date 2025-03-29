@@ -219,19 +219,19 @@ const Home = () => {
             />
             <DashboardCard 
               title="Total Contribution" 
-              value={`$${metrics.totalContribution}`} 
+              value={`₹${metrics.totalContribution}`} 
               icon="💰" 
               color="#2ecc71"
             />
             <DashboardCard 
               title="Monthly Salary" 
-              value={`$${userData?.salary}`} 
+              value={`₹${userData?.salary}`} 
               icon="💵" 
               color="#e67e22"
             />
             <DashboardCard 
               title="Projected Pension" 
-              value={`$${metrics.projectedPension}`} 
+              value={`₹${metrics.projectedPension}`} 
               icon="🎯" 
               color="#9b59b6"
             />

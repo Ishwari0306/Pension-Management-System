@@ -164,15 +164,36 @@ employeeRouter.post("/apply-pension-scheme",authenticate,async(req,res)=>{
             return res.status(404).json({ msg: "Pension scheme not found" });
         }
 
-
-        if (investmentAmount < scheme.minimumInvestment || investmentAmount > scheme.maximumInvestment) {
-            return res.status(400).json({ msg: "Investment amount is out of range" });
-        }
-
-
         const employee = await employeeModel.findOne({ employeeId });
         if (!employee) {
             return res.status(404).json({ msg: "Employee not found" });
+        }
+
+        const minAllowed=scheme.minSalaryPercentage > 0 ? (employee.salary * scheme.minSalaryPercentage / 100) : scheme.minimumInvestment;
+
+        const maxAllowed=Math.min(scheme.maximumInvestment,(employee.salary * scheme.maxSalaryPercentage / 100));
+        
+        if (investmentAmount < minAllowed) {
+            return res.status(400).json({ 
+                msg: `Minimum investment for this scheme is ₹${minAllowed} (${scheme.minSalaryPercentage}% of your salary)`
+            });
+        }
+
+        if (investmentAmount > maxAllowed) {
+            return res.status(400).json({ 
+                msg: `Maximum investment for this scheme is ₹${maxAllowed} (${scheme.maxSalaryPercentage}% of your salary)`
+            });
+        }
+
+        // Check if employee has already applied for this scheme
+        const existingApplication = employee.appliedSchemes.find(
+            app => app.schemeId.toString() === schemeId
+        );
+        
+        if (existingApplication) {
+            return res.status(400).json({ 
+                msg: "You have already applied for this scheme"
+            });
         }
 
         // Add the scheme to the employee's applied schemes
@@ -185,8 +206,16 @@ employeeRouter.post("/apply-pension-scheme",authenticate,async(req,res)=>{
         });
 
         await employee.save();
-
-        res.json({ msg: "Pension scheme applied successfully", employee });
+        
+        res.json({ 
+            msg: "Pension scheme applied successfully",
+            data: {
+                scheme: scheme.name,
+                amountInvested: investmentAmount,
+                minAllowed,
+                maxAllowed
+            }
+        });
     } catch (err) {
         console.error("Error applying for pension scheme:", err);
         res.status(500).json({ msg: "Failed to apply for pension scheme" });

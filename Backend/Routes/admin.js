@@ -108,10 +108,12 @@ adminRouter.get("/employees",authenticate,async(req,res)=>{
     const { companyId }=req.user;
 
     try{
-        const employees=await EmployeeModel.find( {companyId} );
-        res.json(
-            employees
-        );
+        const employees=await EmployeeModel.find( {companyId} )
+        .populate({
+            path: 'appliedSchemes.schemeId',
+            model: 'pensions'
+        });
+        res.json(employees);
     }
     catch(err){
         console.error("Error fetching employees:", err);

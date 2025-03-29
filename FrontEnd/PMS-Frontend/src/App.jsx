@@ -5,10 +5,11 @@ import AuthForm from './AuthForm.jsx';
 import HeaderPMS from './Components/HeaderPMS.jsx';
 import Profile from './Components/Profile.jsx';
 import Home from './Components/Home.jsx';
-import AdminHome from './Components/AdminHome.jsx'; 
-import AdminProfile from './Components/AdminProfile.jsx';
-import ApplyPensionScheme from './Components/ApplyPensionScheme.jsx';
-import ApplicationHistory from './Components/ApplicationHistory.jsx';
+import AdminHome from './Components/AdminPanel/AdminHome.jsx'; 
+import AdminProfile from './Components/AdminPanel/AdminProfile.jsx';
+import ApplyPensionScheme from './Components/Application and History/ApplyPensionScheme.jsx';
+import ApplicationHistory from './Components/Application and History/ApplicationHistory.jsx';
+import PensionCalculator from './Components/pension-calculator.jsx';
 
 const ProtectedRoute = ({ children, isAdmin }) => {
   const token = localStorage.getItem('token');
@@ -124,10 +125,7 @@ function App() {
           path="/pension-calculator"
           element={
             <ProtectedRoute isAdmin={false}>
-              <div style={{ padding: '20px' }}>
-                <h1>Pension Calculator</h1>
-                <p>This feature is coming soon...</p>
-              </div>
+              <PensionCalculator />
             </ProtectedRoute>
           }
         />

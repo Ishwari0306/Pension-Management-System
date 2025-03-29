@@ -1,201 +1,174 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
 
 :root {
-
-  --primary-color: #3498db;
-  --secondary-color: #2ecc71;
-  --background-color: #f0f3f6;
-  --card-background: #ffffff;
-  --text-color: #333333;
+  /* Professional Color Palette */
+  --primary-color: #2c3e50;        /* Deep Blue-Gray */
+  --secondary-color: #34495e;      /* Slightly Lighter Blue-Gray */
+  --accent-color: #3498db;         /* Bright Blue */
+  --background-color: #ecf0f1;     /* Light Gray-White */
+  --card-background: #ffffff;      
+  --text-color: #2c3e50;           /* Dark Gray for Text */
+  --text-muted: #7f8c8d;           /* Muted Gray */
   --button-text-color: #ffffff;
+  --success-color: #2ecc71;        /* Green */
+  --error-color: #e74c3c;          /* Red */
 
+  /* Typography */
+  --font-family: 'Poppins', sans-serif;
 }
 
-body {
-  font-family: sans-serif;
-  background-color: var(--background-color);
+* {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+body {
+  font-family: var(--font-family);
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.6;
+}
+
+/* Login Container */
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(140deg, #70566D, #DAF7DC)
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  padding: 20px;
 }
 
 .login-card {
   background-color: var(--card-background);
-  border-radius: 10px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  padding: 2.5rem;
   width: 100%;
-  max-width: 400px;
+  max-width: 450px;
+  transition: all 0.3s ease;
 }
 
-.login-title {
-  color: var(--primary-color);
-  font-size: 1.8rem;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 1.5rem;
+.login-card:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
 }
 
+/* Toggle Buttons */
 .toggle-buttons {
   display: flex;
   justify-content: center;
   margin-bottom: 1.5rem;
+  background-color: var(--background-color);
+  border-radius: 30px;
+  padding: 4px;
 }
 
 .toggle-button {
   background-color: transparent;
   border: none;
-  color: var(--text-color);
+  color: var(--text-muted);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.5rem;
+  border-radius: 30px;
   transition: all 0.3s ease;
-  border-radius: 20px; /* Add border-radius for consistency */
+  margin: 0 4px;
 }
 
 .toggle-button:hover {
-  background-color: var(--primary-color);
+  background-color: var(--accent-color);
   color: var(--button-text-color);
 }
 
 .toggle-button.active {
   background-color: var(--primary-color);
   color: var(--button-text-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-form {
-  display: flex;
-  flex-direction: column;
-}
-
+/* Form Elements */
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem;
 }
 
 .form-group label {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-color);
   margin-bottom: 0.5rem;
 }
 
-.form-group select {
+input, select {
   width: 100%;
-  padding: 0.8rem;
+  padding: 0.75rem;
   font-size: 1rem;
-  border: 2px solid var(--primary-color);
+  border: 1px solid var(--text-muted);
   border-radius: 8px;
-  background-color: var(--card-background);
+  background-color: var(--background-color);
   color: var(--text-color);
-  appearance: none; /* Remove default arrow */
-  cursor: pointer;
   transition: all 0.3s ease;
 }
 
-/* Custom dropdown arrow */
-.form-group select {
-  background-image: url("data:image/svg+xml;charset=UT…%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.8rem center;
-  background-size: 12px;
-}
-
-/* Hover effect */
-.form-group select:hover {
-  border-color: var(--secondary-color);
-}
-
-/* Focus effect */
-.form-group select:focus {
-  border-color: var(--primary-color);
+input:focus, select:focus {
+  border-color: var(--accent-color);
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-  outline: none;
-}
-
-/* Disabled state */
-.form-group select:disabled {
-  background-color: #f0f0f0;
-  cursor: not-allowed;
-}
-
-/* Styling the dropdown options */
-.form-group select option {
-  padding: 0.5rem;
-  background-color: var(--card-background);
-  color: var(--text-color);
-}
-
-/* Styling the dropdown when open */
-.form-group select:active,
-.form-group select:focus {
-  background-color: var(--card-background);
-}
-
-label {
-  color: var(--text-color);
-  display: block;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-}
-
-input {
-  background-color: #f0f3f6;
-  border: none;
-  border-radius: 5px;
-  color: var(--text-color);
-  font-size: 1rem;
-  padding: 0.8rem;
-  transition: all 0.3s ease;
-  width: 100%;
-}
-
-input:focus {
-  background-color: #ffffff;
-  box-shadow: 0 0 0 2px var(--primary-color);
   outline: none;
 }
 
 .submit-button {
   background-color: var(--primary-color);
-  border: none;
-  border-radius: 5px;
   color: var(--button-text-color);
-  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 0.9rem;
   font-size: 1rem;
   font-weight: 600;
-  margin-top: 1rem;
-  padding: 0.8rem;
+  cursor: pointer;
   transition: all 0.3s ease;
-  width: 100%;
+  margin-top: 1rem;
 }
 
 .submit-button:hover {
-  background-color: #2980b9;
+  background-color: var(--secondary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .switch-mode {
-  color: var(--text-color);
-  font-size: 0.9rem;
-  margin-top: 1rem;
   text-align: center;
+  margin-top: 1.5rem;
+  color: var(--text-muted);
 }
 
 .switch-button {
-  background-color: transparent;
+  color: var(--accent-color);
+  background: none;
   border: none;
-  color: var(--primary-color);
-  cursor: pointer;
-  font-size: 0.9rem;
   font-weight: 600;
+  cursor: pointer;
   text-decoration: underline;
+  transition: color 0.3s ease;
 }
 
+.switch-button:hover {
+  color: var(--primary-color);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 480px) {
+  .login-card {
+    width: 95%;
+    padding: 1.5rem;
+  }
+
+  .toggle-buttons {
+    flex-direction: column;
+  }
+
+  .toggle-button {
+    margin: 4px 0;
+  }
+}

@@ -1,13 +1,13 @@
-const mongoose=require("mongoose");
+const mongoose = require("mongoose");
 
 const pensionSchema = new mongoose.Schema({
     name: {
-      type: String,
-      required: true
+        type: String,
+        required: true
     },
     description: {
-      type: String,
-      required: true,
+        type: String,
+        required: true,
     },
     minimumInvestment: {
         type: Number,
@@ -25,11 +25,23 @@ const pensionSchema = new mongoose.Schema({
         type: Number, // Duration in years
         required: true,
     },
+    minSalaryPercentage: {  // Minimum percentage of salary required to invest
+        type: Number,
+        default: 0
+    },
+    maxSalaryPercentage: {  // Maximum percentage of salary allowed to invest
+        type: Number,
+        default: 100
+    },
+    isGovernmentScheme: {   // Flag for government schemes
+        type: Boolean,
+        default: false
+    },
     createdAt: {
         type: Date,
         default: Date.now,
     },
-  });
+});
 
-  const PensionModel=mongoose.model("Pension",pensionSchema);
-  module.exports=PensionModel;
+const PensionModel = mongoose.model("pensions", pensionSchema);
+module.exports = PensionModel;
