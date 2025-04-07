@@ -29,18 +29,26 @@ employeeRouter.post("/signup",async(req,res)=>{
     const name=req.body.name;
     const email=req.body.email;
     const password=req.body.password;
+    let dateOfBirth=req.body.dateOfBirth;
     let dateOfJoining=req.body.dateOfJoining;
     const employeeId=await generateUniqueEmployeeID();
     const companyName=req.body.companyName;
-    const date=new Date(dateOfJoining);
+    const date1=new Date(dateOfJoining);
+    const date2=new Date(dateOfBirth);
 
-    if(isNaN(date)){
+    if(isNaN(date1)){
+        return res.status(400).json({
+            error:"Invalid Date Format"
+        });
+    }
+    if(isNaN(date2)){
         return res.status(400).json({
             error:"Invalid Date Format"
         });
     }
 
-    const datetoJoin=date.toISOString();
+    const datetoJoin=date1.toISOString();
+    const dob=date2.toISOString();
     const salary=req.body.salary; 
     
 
@@ -62,6 +70,7 @@ employeeRouter.post("/signup",async(req,res)=>{
             name:name,
             email:email,
             password:hashedPassword,
+            dateOfBirth:dob,
             dateOfJoining:datetoJoin,
             employeeId:employeeId, 
             salary:salary,
@@ -233,7 +242,13 @@ employeeRouter.get("/applied-schemes", authenticate, async (req, res) => {
             return res.status(404).json({ msg: "Employee not found" });
         }
 
-        res.json(employee.appliedSchemes);
+        const schemesWithDetails = employee.appliedSchemes.map(scheme => ({
+            ...scheme.toObject(),
+            interestRate: scheme.schemeId?.interestRate || 0,
+            duration: scheme.schemeId?.duration || 0
+        }));
+
+        res.json(schemesWithDetails);
     } catch (err) {
         console.error("Error fetching applied schemes:", err);
         res.status(500).json({ msg: "Failed to fetch applied schemes" });

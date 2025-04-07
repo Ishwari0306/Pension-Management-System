@@ -12,7 +12,7 @@ const PensionCalculator = () => {
     monthlyContribution: 5000,
     interestRate: 8.15,
     duration: 30,
-    pensionScheme: "epf",
+    pensionScheme: "",
   })
 
   // Results state
@@ -21,58 +21,53 @@ const PensionCalculator = () => {
   const [selectedScheme, setSelectedScheme] = useState(null)
   const [activeTab, setActiveTab] = useState("chart")
   const [formErrors, setFormErrors] = useState({})
+  const [pensionSchemes, setPensionSchemes] = useState([])
+  const [loadingSchemes, setLoadingSchemes] = useState(true)
 
-  // Sample pension schemes
-  const pensionSchemes = [
-    {
-      id: "epf",
-      name: "Employee Provident Fund (EPF)",
-      description: "Government-backed retirement savings scheme",
-      interestRate: 8.15,
-      minimumInvestment: 1000,
-      maximumInvestment: 1500000,
-      duration: 35,
-    },
-    {
-      id: "nps",
-      name: "National Pension System (NPS)",
-      description: "Voluntary long-term retirement savings scheme",
-      interestRate: 9.0,
-      minimumInvestment: 1000,
-      maximumInvestment: 2000000,
-      duration: 40,
-    },
-    {
-      id: "ppf",
-      name: "Public Provident Fund (PPF)",
-      description: "Long-term savings scheme with tax benefits",
-      interestRate: 7.1,
-      minimumInvestment: 500,
-      maximumInvestment: 150000,
-      duration: 15,
-    },
-    {
-      id: "custom",
-      name: "Custom Pension Plan",
-      description: "Create your own custom pension plan",
-      interestRate: 8.0,
-      minimumInvestment: 1000,
-      maximumInvestment: 10000000,
-      duration: 30,
-    },
-  ]
-
-  // Set default selected scheme on component mount
+  // Fetch pension schemes from backend
   useEffect(() => {
-    setSelectedScheme(pensionSchemes[0])
+    const fetchPensionSchemes = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/PMS/employee/pension-schemes", {
+          headers: {
+            "token": localStorage.getItem("token") || "",
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch pension schemes")
+        }
+
+        const data = await response.json()
+        setPensionSchemes(data)
+        
+        // Set default scheme if available
+        if (data.length > 0) {
+          setSelectedScheme(data[0])
+          setFormData(prev => ({
+            ...prev,
+            pensionScheme: data[0]._id,
+            interestRate: data[0].interestRate,
+            duration: data[0].duration
+          }))
+        }
+      } catch (err) {
+        console.error("Error fetching pension schemes:", err)
+      } finally {
+        setLoadingSchemes(false)
+      }
+    }
+
+    fetchPensionSchemes()
   }, [])
 
   // Update form values when scheme changes
   useEffect(() => {
-    if (selectedScheme && selectedScheme.id !== "custom") {
+    if (selectedScheme) {
       setFormData((prev) => ({
         ...prev,
         interestRate: selectedScheme.interestRate,
+        duration: selectedScheme.duration
       }))
     }
   }, [selectedScheme])
@@ -80,13 +75,12 @@ const PensionCalculator = () => {
   // Handle scheme change
   const handleSchemeChange = (e) => {
     const schemeId = e.target.value
-    const scheme = pensionSchemes.find((s) => s.id === schemeId)
+    const scheme = pensionSchemes.find((s) => s._id === schemeId)
     if (scheme) {
       setSelectedScheme(scheme)
       setFormData((prev) => ({
         ...prev,
         pensionScheme: schemeId,
-        interestRate: scheme.id !== "custom" ? scheme.interestRate : prev.interestRate,
       }))
     }
   }
@@ -103,28 +97,46 @@ const PensionCalculator = () => {
   // Validate form
   const validateForm = () => {
     const errors = {}
+    const { initialInvestment, monthlyContribution, interestRate, duration } = formData
 
     if (!formData.name.trim()) {
       errors.name = "Name is required"
     }
 
-    if (formData.initialInvestment < selectedScheme.minimumInvestment) {
-      errors.initialInvestment = `Minimum investment is ${formatCurrency(selectedScheme.minimumInvestment)}`
+    if (selectedScheme) {
+      if (initialInvestment < selectedScheme.minimumInvestment) {
+        errors.initialInvestment = `Minimum investment is ${formatCurrency(selectedScheme.minimumInvestment)}`
+      }
+
+      if (initialInvestment > selectedScheme.maximumInvestment) {
+        errors.initialInvestment = `Maximum investment is ${formatCurrency(selectedScheme.maximumInvestment)}`
+      }
+
+      // Validate based on salary percentage if applicable
+      if (selectedScheme.minSalaryPercentage > 0) {
+        const minAllowed = selectedScheme.minSalaryPercentage / 100 * formData.salary
+        if (initialInvestment < minAllowed) {
+          errors.initialInvestment = `Minimum ${selectedScheme.minSalaryPercentage}% of your salary (${formatCurrency(minAllowed)})`
+        }
+      }
+
+      if (selectedScheme.maxSalaryPercentage < 100) {
+        const maxAllowed = selectedScheme.maxSalaryPercentage / 100 * formData.salary
+        if (initialInvestment > maxAllowed) {
+          errors.initialInvestment = `Maximum ${selectedScheme.maxSalaryPercentage}% of your salary (${formatCurrency(maxAllowed)})`
+        }
+      }
     }
 
-    if (formData.initialInvestment > selectedScheme.maximumInvestment) {
-      errors.initialInvestment = `Maximum investment is ${formatCurrency(selectedScheme.maximumInvestment)}`
-    }
-
-    if (formData.monthlyContribution < 0) {
+    if (monthlyContribution < 0) {
       errors.monthlyContribution = "Monthly contribution must be positive"
     }
 
-    if (formData.interestRate < 1 || formData.interestRate > 20) {
+    if (interestRate < 1 || interestRate > 20) {
       errors.interestRate = "Interest rate must be between 1% and 20%"
     }
 
-    if (formData.duration < 1 || formData.duration > 40) {
+    if (duration < 1 || duration > 40) {
       errors.duration = "Duration must be between 1 and 40 years"
     }
 
@@ -132,7 +144,7 @@ const PensionCalculator = () => {
     return Object.keys(errors).length === 0
   }
 
-  // Calculate pension growth
+  // Calculate pension growth with compounding
   const calculatePensionGrowth = () => {
     const { initialInvestment, monthlyContribution, interestRate, duration } = formData
 
@@ -142,11 +154,13 @@ const PensionCalculator = () => {
 
     let currentAmount = initialInvestment
     const monthlyRate = interestRate / 100 / 12
+    const yearlyRate = interestRate / 100
 
     for (let year = 1; year <= duration; year++) {
       let yearlyContribution = 0
       let yearlyInterest = 0
 
+      // Calculate monthly contributions and interest
       for (let month = 1; month <= 12; month++) {
         // Add monthly contribution
         currentAmount += monthlyContribution
@@ -173,11 +187,22 @@ const PensionCalculator = () => {
 
     setYearlyBreakdown(yearlyData)
 
+    // Calculate pension based on scheme type
+    let monthlyPension = 0
+    if (selectedScheme?.isGovernmentScheme) {
+      // Government schemes often have fixed pension calculations
+      monthlyPension = currentAmount * (interestRate / 100 / 12)
+    } else {
+      // Standard calculation: assume 25 years of pension distribution
+      monthlyPension = currentAmount / (25 * 12)
+    }
+
     return {
       finalAmount: Math.round(currentAmount),
       totalInvestment: Math.round(totalInvestment),
       totalInterest: Math.round(totalInterest),
-      monthlyPension: Math.round(currentAmount / (25 * 12)), // Assuming 25 years of pension distribution
+      monthlyPension: Math.round(monthlyPension),
+      withdrawalRate: ((monthlyPension * 12 * 100) / currentAmount).toFixed(2)
     }
   }
 
@@ -215,6 +240,38 @@ const PensionCalculator = () => {
       )
     }
     return null
+  }
+
+  if (loadingSchemes) {
+    return (
+      <div className="pension-calculator-container">
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          </div>
+          <h3>Loading Pension Schemes...</h3>
+          <p>Please wait while we load available pension schemes</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (pensionSchemes.length === 0) {
+    return (
+      <div className="pension-calculator-container">
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          </div>
+          <h3>No Pension Schemes Available</h3>
+          <p>There are currently no pension schemes available for calculation</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -273,7 +330,7 @@ const PensionCalculator = () => {
                   onChange={handleSchemeChange}
                 >
                   {pensionSchemes.map((scheme) => (
-                    <option key={scheme.id} value={scheme.id}>
+                    <option key={scheme._id} value={scheme._id}>
                       {scheme.name}
                     </option>
                   ))}
@@ -313,6 +370,9 @@ const PensionCalculator = () => {
               {selectedScheme && (
                 <p className="input-hint">
                   <span>Range:</span> {formatCurrency(selectedScheme.minimumInvestment)} - {formatCurrency(selectedScheme.maximumInvestment)}
+                  {selectedScheme.minSalaryPercentage > 0 && (
+                    <span> (or {selectedScheme.minSalaryPercentage}%-{selectedScheme.maxSalaryPercentage}% of salary)</span>
+                  )}
                 </p>
               )}
               {formErrors.initialInvestment && (
@@ -361,14 +421,14 @@ const PensionCalculator = () => {
                 step="0.1"
                 value={formData.interestRate}
                 onChange={handleInputChange}
-                disabled={selectedScheme && selectedScheme.id !== "custom"}
+                disabled={selectedScheme && !selectedScheme.isGovernmentScheme}
                 className={formErrors.interestRate ? "slider-error" : ""}
               />
               {selectedScheme && (
                 <p className="input-hint">
-                  {selectedScheme.id !== "custom"
-                    ? "Fixed rate for this scheme"
-                    : "Adjust for custom plan"}
+                  {selectedScheme.isGovernmentScheme
+                    ? "Fixed rate for this government scheme"
+                    : "Adjustable rate for this scheme"}
                 </p>
               )}
               {formErrors.interestRate && <p className="error-message">{formErrors.interestRate}</p>}
@@ -385,7 +445,7 @@ const PensionCalculator = () => {
                 id="duration"
                 name="duration"
                 min="1"
-                max="40"
+                max={selectedScheme?.duration || 40}
                 step="1"
                 value={formData.duration}
                 onChange={handleInputChange}
@@ -719,24 +779,7 @@ const PensionCalculator = () => {
               </div>
               <h3>No Calculation Results Yet</h3>
               <p>Fill in the form and click "Calculate Projection" to see your detailed pension growth analysis</p>
-              <div className="sample-data">
-                <div className="sample-data-item">
-                  <span>Initial Investment:</span>
-                  <span>₹100,000</span>
-                </div>
-                <div className="sample-data-item">
-                  <span>Monthly Contribution:</span>
-                  <span>₹5,000</span>
-                </div>
-                <div className="sample-data-item">
-                  <span>Interest Rate:</span>
-                  <span>8.15%</span>
-                </div>
-                <div className="sample-data-item">
-                  <span>Duration:</span>
-                  <span>30 years</span>
-                </div>
-              </div>
+              
             </div>
           )}
         </div>

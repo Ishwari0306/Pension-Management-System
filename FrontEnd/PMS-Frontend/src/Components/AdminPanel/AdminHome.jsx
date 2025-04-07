@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './AdminStyles.css';
+import { Bar, Pie } from 'react-chartjs-2';
+import { Chart as ChartJS, registerables } from 'chart.js';
+ChartJS.register(...registerables);
 
 const AdminHome = () => {
   const [employees, setEmployees] = useState([]);
@@ -39,46 +42,157 @@ const AdminHome = () => {
     fetchEmployees();
   }, [navigate]);
 
-  const handleManageApplication = async (employeeId, schemeId, status, adminNote) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/PMS/admin/manage-pension-application', {
-        method: 'POST',
-        headers: {
-          'token': token,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          employeeId,
-          schemeId,
-          status,
-          adminNote,
-        }),
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to manage application');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    status: 'all',
+    sortBy: 'recent',
+    minAmount: '',
+    maxAmount: ''
+  });
+
+  // Filter and sort employees
+  const filteredEmployees = employees
+    .filter(emp => {
+      const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          emp.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = filters.status === 'all' || 
+                          emp.appliedSchemes.some(s => s.status === filters.status);
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      if (filters.sortBy === 'recent') {
+        return new Date(b.appliedSchemes[0]?.appliedAt) - new Date(a.appliedSchemes[0]?.appliedAt);
+      } else if (filters.sortBy === 'amount') {
+        return (b.appliedSchemes[0]?.investmentAmount || 0) - (a.appliedSchemes[0]?.investmentAmount || 0);
       }
-
-      const data=await response.json();
-
-      setEmployees(prevEmployees => 
-        prevEmployees.map(emp => 
-          emp._id === data.employee._id ? data.employee : emp
-        )
+      return 0;
+    })
+    .filter(emp => {
+      if (!filters.minAmount && !filters.maxAmount) return true;
+      const amount = emp.appliedSchemes[0]?.investmentAmount || 0;
+      return (
+        (!filters.minAmount || amount >= Number(filters.minAmount)) &&
+        (!filters.maxAmount || amount <= Number(filters.maxAmount))
       );
-      
-      // Show success feedback
-      alert(`Application ${status.toLowerCase()} successfully!`);
-      
-    } catch (err) {
-      console.error('Error managing application:', err);
-    }
-  };
+    });
+
+    const handleManageApplication = async (employeeId, schemeId, status, adminNote) => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/PMS/admin/manage-pension-application', {
+          method: 'POST',
+          headers: {
+            'token': token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            employeeId,
+            schemeId,
+            status,
+            adminNote,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to manage application');
+        }
+
+        const data=await response.json();
+
+        setEmployees(prevEmployees => 
+          prevEmployees.map(emp => 
+            emp._id === data.employee._id ? data.employee : emp
+          )
+        );
+        
+        // Show success feedback
+        alert(`Application ${status.toLowerCase()} successfully!`);
+        
+      } catch (err) {
+        console.error('Error managing application:', err);
+      }
+    };
 
   const toggleEmployeeExpansion = (employeeId) => {
     setExpandedEmployee(expandedEmployee === employeeId ? null : employeeId);
   };
+
+  const [analyticsData, setAnalyticsData] = useState({
+    contributionTrends: null,
+    schemePopularity: null,
+    projectedLiabilities: null
+  });
+  
+  // Add this useEffect for analytics data
+  useEffect(() => {
+    if (employees.length > 0) {
+      // Contribution trends (last 6 months)
+      const monthlyContributions = {};
+      const now = new Date();
+      
+      employees.forEach(emp => {
+        emp.appliedSchemes.forEach(scheme => {
+          const monthYear = new Date(scheme.appliedAt).toLocaleString('default', { 
+            month: 'short', 
+            year: 'numeric' 
+          });
+          
+          if (!monthlyContributions[monthYear]) {
+            monthlyContributions[monthYear] = 0;
+          }
+          monthlyContributions[monthYear] += scheme.investmentAmount || 0;
+        });
+      });
+  
+      // Scheme popularity
+      const schemeCounts = {};
+      employees.forEach(emp => {
+        emp.appliedSchemes.forEach(scheme => {
+          const schemeName = scheme.schemeId?.name || 'Unknown';
+          schemeCounts[schemeName] = (schemeCounts[schemeName] || 0) + 1;
+        });
+      });
+  
+      // Projected liabilities (simplified calculation)
+      const totalLiabilities = employees.reduce((total, emp) => {
+        return total + (emp.appliedSchemes.reduce((empTotal, scheme) => {
+          const rate = scheme.schemeId?.interestRate || 0;
+          const duration = scheme.schemeId?.duration || 1;
+          return empTotal + ((scheme.investmentAmount || 0) * Math.pow(1 + rate/100, duration));
+        }, 0));
+      }, 0);
+  
+      setAnalyticsData({
+        contributionTrends: {
+          labels: Object.keys(monthlyContributions),
+          datasets: [{
+            label: 'Monthly Contributions (₹)',
+            data: Object.values(monthlyContributions),
+            backgroundColor: '#4a6baf'
+          }]
+        },
+        schemePopularity: {
+          labels: Object.keys(schemeCounts),
+          datasets: [{
+            data: Object.values(schemeCounts),
+            backgroundColor: [
+              '#4a6baf',
+              '#ffa000',
+              '#28a745',
+              '#dc3545',
+              '#6c757d'
+            ]
+          }]
+        },
+        projectedLiabilities: totalLiabilities.toLocaleString('en-IN', {
+          style: 'currency',
+          currency: 'INR',
+          minimumFractionDigits: 0
+        })
+      });
+    }
+  }, [employees]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "Not available";
@@ -104,6 +218,56 @@ const AdminHome = () => {
     <div className="admin-container">
       <h1 className="admin-title">Admin Dashboard</h1>
       
+        <div className="search-filters-section">
+        <div className="search-bar">
+          <input
+            type="text"
+            placeholder="Search employees..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <svg className="search-icon" viewBox="0 0 24 24">
+            <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          </svg>
+        </div>
+
+    <div className="filter-controls">
+      <select 
+        value={filters.status}
+        onChange={(e) => setFilters({...filters, status: e.target.value})}
+      >
+        <option value="all">All Statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="Accepted">Accepted</option>
+        <option value="Rejected">Rejected</option>
+      </select>
+
+      <select
+        value={filters.sortBy}
+        onChange={(e) => setFilters({...filters, sortBy: e.target.value})}
+      >
+        <option value="recent">Sort by Recent</option>
+        <option value="amount">Sort by Amount</option>
+      </select>
+
+      <div className="amount-range">
+        <input
+          type="number"
+          placeholder="Min Amount"
+          value={filters.minAmount}
+          onChange={(e) => setFilters({...filters, minAmount: e.target.value})}
+        />
+        <span>to</span>
+        <input
+          type="number"
+          placeholder="Max Amount"
+          value={filters.maxAmount}
+          onChange={(e) => setFilters({...filters, maxAmount: e.target.value})}
+        />
+      </div>
+    </div>
+  </div>
+
       <div className="dashboard-cards">
         <div className="stat-card">
           <div className="stat-icon" style={{ background: '#e3f2fd' }}>
@@ -130,6 +294,46 @@ const AdminHome = () => {
           </div>
         </div>
       </div>
+
+    <div className="analytics-section">
+      <h2>Pension Analytics</h2>
+  
+      <div className="analytics-grid">
+        <div className="analytics-card">
+         <h3>Monthly Contributions</h3>
+          {analyticsData.contributionTrends ? (
+        <Bar 
+          data={analyticsData.contributionTrends} 
+          options={{ responsive: true }}
+        />
+      ) : (
+        <p>Loading data...</p>
+      )}
+    </div>
+    
+    <div className="analytics-card">
+      <h3>Scheme Popularity</h3>
+      {analyticsData.schemePopularity ? (
+        <Pie 
+          data={analyticsData.schemePopularity} 
+          options={{ responsive: true }}
+        />
+      ) : (
+        <p>Loading data...</p>
+      )}
+    </div>
+    
+    <div className="analytics-card">
+      <h3>Projected Liabilities</h3>
+      <div className="liability-amount">
+        {analyticsData.projectedLiabilities || 'Calculating...'}
+      </div>
+      <p className="liability-note">
+        Estimated future payouts based on current investments and interest rates
+      </p>
+        </div>
+      </div>
+    </div>
 
       <div className="employee-section">
         <h2>Pending Scheme Applications</h2>

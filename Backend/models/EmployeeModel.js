@@ -19,8 +19,13 @@ const EmployeeSchema=new mongoose.Schema({
         type:String,
         unique:true,
     },
+    dateOfBirth:{
+        type:Date,
+        required: true,
+    },
     dateOfJoining:{
         type:Date,
+        required: true,
     },
     salary: {
         type: Number,

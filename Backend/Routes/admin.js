@@ -218,7 +218,7 @@ adminRouter.post("/manage-pension-application",authenticate,async (req, res) => 
 
 
         appliedScheme.status = status;
-        appliedScheme.adminNote = adminNote;
+        appliedScheme.adminNote = adminNote; 
 
         await employee.save();
 

@@ -6,6 +6,7 @@ export default function EmployeeSignup({onAuthSuccess}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [salary, setSalary] = useState(0);
+  const [dateOfBirth,setDateOfBirth]=useState("");
   const [dateOfJoining, setDateOfJoining] = useState("");
   const [companyName,setCompanyName]=useState("");
   const [error, setError] = useState("");
@@ -25,6 +26,7 @@ export default function EmployeeSignup({onAuthSuccess}) {
           email,
           password,
           salary,
+          dateOfBirth,
           dateOfJoining, 
           companyName,
         }),
@@ -91,6 +93,16 @@ export default function EmployeeSignup({onAuthSuccess}) {
           id="salary"
           value={salary}
           onChange={(e) => setSalary(e.target.value)}
+          required
+        />
+      </div>
+      <div className="form-group">
+        <label htmlFor="dateOfBirth">Date of Birth</label>
+        <input
+          type="date"
+          id="dateOfBirth"
+          value={dateOfBirth}
+          onChange={(e) => setDateOfBirth(e.target.value)}
           required
         />
       </div>

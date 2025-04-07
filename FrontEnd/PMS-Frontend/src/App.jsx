@@ -68,7 +68,7 @@ function App() {
           path="/home"
           element={
             <ProtectedRoute isAdmin={false}>
-              <HeaderPMS />
+              
               <Home />
             </ProtectedRoute>
           }
@@ -77,6 +77,7 @@ function App() {
           path="/profile"
           element={
             <ProtectedRoute isAdmin={false}>
+              <HeaderPMS />
               <Profile />
             </ProtectedRoute>
           }

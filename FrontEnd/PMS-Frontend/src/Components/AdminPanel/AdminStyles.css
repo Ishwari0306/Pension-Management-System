@@ -506,3 +506,113 @@ body {
   .dashboard-card[style*="--card-color: #4CAF50"] .card-value {
     color: #4CAF50;
   }
+
+
+  /* Search & Filters */
+.search-filters-section {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.search-bar {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 10px 15px 10px 40px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  fill: #666;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.filter-controls select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+}
+
+.amount-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.amount-range input {
+  width: 100px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.amount-range span {
+  color: #666;
+}
+
+
+/* Analytics Section */
+.analytics-section {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-top: 30px;
+}
+
+.analytics-section h2 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.analytics-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+  min-height: 300px;
+}
+
+.analytics-card h3 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+
+.liability-amount {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #4a6baf;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.liability-note {
+  font-size: 0.9rem;
+  color: #666;
+  text-align: center;
+}

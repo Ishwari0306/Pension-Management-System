@@ -1,64 +1,60 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import DashboardCard from './DashboardCard';
+import { useNavigate } from 'react-router-dom';
+import { FiClock, FiDollarSign, FiTrendingUp, FiCheckCircle } from 'react-icons/fi';
+import { FaCalculator } from 'react-icons/fa';
+import HeaderPMS from './HeaderPMS';
 
-
-// Navigation menu component
-const NavMenu = ({ isAdmin }) => {
-  const menuItems = [
-    { name: 'Dashboard', path: '/home' },
-    { name: 'Profile', path: '/profile' },
-    ...(isAdmin ? [
-      { name: 'Manage Employees', path: '/manage-employees' },
-      { name: 'Company Settings', path: '/company-settings' }
-    ] : [
-      { name: 'Apply for Pension Scheme', path: '/apply-pension-scheme' }, 
-      { name: 'Application History', path: '/application-history' },
-      { name: 'Pension Calculator', path: '/pension-calculator' },
-      { name: 'Documents', path: '/documents' }
-    ])
-  ];
-
+const StatCard = ({ title, value, icon: Icon, color }) => {
   return (
     <div style={{
-      backgroundColor: 'var(--card-background)',
+      backgroundColor: 'white',
+      borderRadius: '12px',
       padding: '20px',
-      borderRadius: '10px',
-      marginBottom: '20px',
-      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+      boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+      borderLeft: `4px solid ${color}`,
+      transition: 'transform 0.2s ease',
+      ':hover': {
+        transform: 'translateY(-5px)'
+      }
     }}>
-      <h2 style={{ color: 'var(--primary-color)', marginTop: 0 }}>Navigation</h2>
-      <ul style={{ 
-        listStyle: 'none', 
-        padding: 0,
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '10px'
-      }}>
-        {menuItems.map((item) => (
-          <li key={item.name}>
-            <Link to={item.path} style={{
-              backgroundColor: window.location.pathname === item.path ? 'var(--primary-color)' : 'transparent',
-              color: window.location.pathname === item.path ? 'white' : 'var(--text-color)',
-              padding: '8px 16px',
-              borderRadius: '5px',
-              textDecoration: 'none',
-              display: 'inline-block',
-              transition: 'all 0.3s ease'
-            }}>
-              {item.name}
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div>
+          <p style={{ 
+            margin: '0 0 8px 0',
+            color: '#7f8c8d',
+            fontSize: '0.9rem',
+            fontWeight: 500
+          }}>
+            {title}
+          </p>
+          <p style={{ 
+            margin: 0,
+            fontSize: '1.5rem',
+            fontWeight: 600,
+            color: '#2c3e50'
+          }}>
+            {value}
+          </p>
+        </div>
+        <div style={{
+          width: '48px',
+          height: '48px',
+          borderRadius: '8px',
+          backgroundColor: `${color}20`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <Icon size={24} color={color} />
+        </div>
+      </div>
     </div>
   );
 };
 
-// Main Home component
 const Home = () => {
   const [userData, setUserData] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [appliedSchemes, setAppliedSchemes] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -71,32 +67,22 @@ const Home = () => {
       }
 
       try {
-        // Try fetching as employee first
-        let response = await fetch("http://localhost:5000/PMS/employee/profile", {
-          headers: {
-            "token":token,
-          }
+        const response = await fetch("http://localhost:5000/PMS/employee/profile", {
+          headers: { "token": token }
         });
 
-        if (response.status === 401 || response.status === 404) {
-          // If not an employee, try as admin
-          response = await fetch("http://localhost:5000/PMS/admin/profile", {
-            headers: {
-              "token": token,
-            }
-          });
-          
-          if (response.ok) {
-            setIsAdmin(true);
-          }
-        }
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch profile: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Failed to fetch profile: ${response.status}`);
 
         const data = await response.json();
         setUserData(data);
+
+        const schemesResponse = await fetch("http://localhost:5000/PMS/employee/applied-schemes", {
+          headers: { "token": token }
+        });
+        
+        if (schemesResponse.ok) {
+          setAppliedSchemes(await schemesResponse.json());
+        }
       } catch (err) {
         console.error("Error fetching user data:", err);
       } finally {
@@ -107,266 +93,327 @@ const Home = () => {
     fetchUserData();
   }, [navigate]);
 
-  // Calculate some example metrics for employee dashboard
-  const calculateEmployeeMetrics = () => {
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return 0;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    if (today.getMonth() < birth.getMonth() || 
+        (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const calculateMetrics = () => {
     if (!userData) return {};
     
+    // Service duration
     const joiningDate = new Date(userData.dateOfJoining);
     const currentDate = new Date();
     const monthsEmployed = (currentDate.getFullYear() - joiningDate.getFullYear()) * 12 + 
                           (currentDate.getMonth() - joiningDate.getMonth());
-    
-    const contributionPerMonth = userData.salary * 0.05; // Assuming 5% contribution
-    const totalContribution = contributionPerMonth * monthsEmployed;
-    const projectedPension = userData.salary * 0.4; // Example calculation
+
+    // Pension calculations
+    const activeSchemes = appliedSchemes.filter(s => s.status === 'Accepted');
+    const totalMonthlyInvestment = activeSchemes.reduce((sum, scheme) => sum + (scheme.investmentAmount || 0), 0);
+    const yearsToRetirement = Math.max(0, 60 - calculateAge(userData.dateOfBirth));
     
     return {
       monthsEmployed,
-      totalContribution: totalContribution.toFixed(2),
-      projectedPension: projectedPension.toFixed(2)
-    };
-  };
-
-  // Example admin metrics
-  const calculateAdminMetrics = () => {
-    // These would come from API in real implementation
-    return {
-      totalEmployees: 42,
-      avgContribution: "3,850.00",
-      pensioners: 5
+      totalMonthlyInvestment: `₹${totalMonthlyInvestment.toLocaleString('en-IN')}`,
+      salary: `₹${userData.salary.toLocaleString('en-IN')}`,
+      activeSchemes: activeSchemes.length,
+      yearsToRetirement
     };
   };
 
   if (loading) {
-    return <div className="loading">Loading dashboard...</div>;
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        backgroundColor: '#f8f9fa'
+      }}>
+        <div style={{
+          padding: '40px',
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        }}>
+          Loading dashboard...
+        </div>
+      </div>
+    );
   }
 
-  const metrics = isAdmin ? calculateAdminMetrics() : calculateEmployeeMetrics();
+  const metrics = calculateMetrics();
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '20px'
+    <div style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
+      <HeaderPMS />
+      
+      <main style={{ 
+        maxWidth: '1200px', 
+        margin: '0 auto', 
+        padding: '30px 20px' 
       }}>
-        <h1 style={{ color: 'var(--primary-color)' }}>
-          {isAdmin ? 'Admin Dashboard' : 'Employee Dashboard'}
-        </h1>
-        <div>
-          <span style={{ marginRight: '15px' }}>
-            Welcome {userData?.name}
-          </span>
-          <button
-            onClick={() => navigate('/profile')}
-            style={{
-              backgroundColor: 'var(--primary-color)',
-              color: 'white',
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '5px',
-              cursor: 'pointer'
-            }}
-          >
-            View Profile
-          </button>
-        </div>
-      </div>
-
-      <NavMenu isAdmin={isAdmin} />
-
-      <div style={{ 
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-        gap: '20px',
-        marginBottom: '30px'
-      }}>
-        {isAdmin ? (
-          <>
-            <DashboardCard 
-              title="Total Employees" 
-              value={metrics.totalEmployees} 
-              icon="👥" 
-              color="#3498db"
-            />
-            <DashboardCard 
-              title="Avg. Contribution" 
-              value={`$${metrics.avgContribution}`} 
-              icon="💰" 
-              color="#2ecc71"
-            />
-            <DashboardCard 
-              title="Pensioners" 
-              value={metrics.pensioners} 
-              icon="👴" 
-              color="#e67e22"
-            />
-            <DashboardCard 
-              title="Companies" 
-              value="1" 
-              icon="🏢" 
-              color="#9b59b6"
-            />
-          </>
-        ) : (
-          <>
-            <DashboardCard 
-              title="Months of Service" 
-              value={metrics.monthsEmployed} 
-              icon="⏱️" 
-              color="#3498db"
-            />
-            <DashboardCard 
-              title="Total Contribution" 
-              value={`₹${metrics.totalContribution}`} 
-              icon="💰" 
-              color="#2ecc71"
-            />
-            <DashboardCard 
-              title="Monthly Salary" 
-              value={`₹${userData?.salary}`} 
-              icon="💵" 
-              color="#e67e22"
-            />
-            <DashboardCard 
-              title="Projected Pension" 
-              value={`₹${metrics.projectedPension}`} 
-              icon="🎯" 
-              color="#9b59b6"
-            />
-          </>
-        )}
-      </div>
-
-      {/* Quick Actions Section */}
-      <div style={{
-        backgroundColor: 'var(--card-background)',
-        borderRadius: '10px',
-        padding: '20px',
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-        marginBottom: '30px'
-      }}>
-        <h2 style={{ color: 'var(--primary-color)', marginTop: 0 }}>Quick Actions</h2>
         <div style={{ 
           display: 'flex', 
-          flexWrap: 'wrap',
-          gap: '15px'
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: '30px'
         }}>
-          {isAdmin ? (
-            <>
-              <button style={buttonStyle}>Add New Employee</button>
-              <button style={buttonStyle}>Generate Reports</button>
-              <button style={buttonStyle}>Update Company Info</button>
-              <button style={buttonStyle}>Manage Pension Plans</button>
-            </>
-          ) : (
-            <>
-              <button style={buttonStyle}>Calculate Pension</button>
-              <button style={buttonStyle}>Update Personal Info</button>
-              <button style={buttonStyle}>Download Statements</button>
-              <button style={buttonStyle}>Contact Admin</button>
-            </>
-          )}
+          <h2 style={{ 
+            margin: 0,
+            fontSize: '1.8rem',
+            color: '#2c3e50',
+            fontWeight: 600
+          }}>
+            Welcome back, {userData?.name}
+          </h2>
+          <button
+            onClick={() => navigate('/apply-pension-scheme')}
+            style={{
+              backgroundColor: '#3498db',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 500,
+              fontSize: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease',
+              ':hover': {
+                backgroundColor: '#2980b9'
+              }
+            }}
+          >
+            <FiTrendingUp size={18} />
+            Apply for New Scheme
+          </button>
         </div>
-      </div>
 
-      {/* Recent Activity Section - This would be populated with real data in a full implementation */}
-      <div style={{
-        backgroundColor: 'var(--card-background)',
-        borderRadius: '10px',
-        padding: '20px',
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
-      }}>
-        <h2 style={{ color: 'var(--primary-color)', marginTop: 0 }}>Recent Activity</h2>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={tableHeaderStyle}>Date</th>
-              <th style={tableHeaderStyle}>Description</th>
-              <th style={tableHeaderStyle}>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style={tableCellStyle}>{new Date().toLocaleDateString()}</td>
-              <td style={tableCellStyle}>
-                {isAdmin ? 'Employee report generated' : 'Monthly contribution processed'}
-              </td>
-              <td style={tableCellStyle}>
-                <span style={{
-                  backgroundColor: '#e8f5e9',
-                  color: '#2e7d32',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: '0.8rem'
-                }}>
-                  Completed
-                </span>
-              </td>
-            </tr>
-            <tr>
-              <td style={tableCellStyle}>{new Date(Date.now() - 86400000).toLocaleDateString()}</td>
-              <td style={tableCellStyle}>
-                {isAdmin ? 'New employee added' : 'Profile information updated'}
-              </td>
-              <td style={tableCellStyle}>
-                <span style={{
-                  backgroundColor: '#e8f5e9',
-                  color: '#2e7d32',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: '0.8rem'
-                }}>
-                  Completed
-                </span>
-              </td>
-            </tr>
-            <tr>
-              <td style={tableCellStyle}>{new Date(Date.now() - 172800000).toLocaleDateString()}</td>
-              <td style={tableCellStyle}>
-                {isAdmin ? 'Pension calculation updated' : 'Document uploaded'}
-              </td>
-              <td style={tableCellStyle}>
-                <span style={{
-                  backgroundColor: '#fff8e1',
-                  color: '#f57c00',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  fontSize: '0.8rem'
-                }}>
-                  Pending
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        {/* Stats Grid */}
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gap: '20px',
+          marginBottom: '30px'
+        }}>
+          <StatCard 
+            title="Months of Service" 
+            value={metrics.monthsEmployed} 
+            icon={FiClock} 
+            color="#3498db"
+          />
+          <StatCard 
+            title="Monthly Salary" 
+            value={metrics.salary} 
+            icon={FiDollarSign} 
+            color="#2ecc71"
+          />
+          <StatCard 
+            title="Active Schemes" 
+            value={metrics.activeSchemes} 
+            icon={FiCheckCircle} 
+            color="#9b59b6"
+          />
+          <StatCard 
+            title="Years to Retirement" 
+            value={metrics.yearsToRetirement} 
+            icon={FiTrendingUp} 
+            color="#e67e22"
+          />
+        </div>
+
+        {/* Quick Actions */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          padding: '25px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+          marginBottom: '30px'
+        }}>
+          <h3 style={{ 
+            margin: '0 0 20px 0',
+            color: '#2c3e50',
+            fontSize: '1.2rem'
+          }}>
+            Quick Actions
+          </h3>
+          <div style={{ 
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '15px'
+          }}>
+            <button 
+              onClick={() => navigate('/profile')}
+              style={{
+                backgroundColor: '#f1f5f9',
+                color: '#2c3e50',
+                border: 'none',
+                padding: '12px 20px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 500,
+                fontSize: '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s ease',
+                ':hover': {
+                  backgroundColor: '#e2e8f0'
+                }
+              }}
+            >
+              View Profile
+            </button>
+            <button 
+              onClick={() => navigate('/apply-pension-scheme')}
+              style={{
+                backgroundColor: '#f1f5f9',
+                color: '#2c3e50',
+                border: 'none',
+                padding: '12px 20px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 500,
+                fontSize: '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px', 
+                transition: 'all 0.2s ease',
+                ':hover': {
+                  backgroundColor: '#e2e8f0'
+                }
+              }}
+            >
+              Browse Schemes
+            </button>
+            <button 
+              onClick={() => navigate('/pension-calculator')}
+              style={{
+                backgroundColor: '#f1f5f9',
+                color: '#2c3e50',
+                border: 'none',
+                padding: '12px 20px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 500,
+                fontSize: '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s ease',
+                ':hover': {
+                  backgroundColor: '#e2e8f0'
+                }
+              }}
+            >
+              <FaCalculator size={18} />
+              Pension Calculator
+            </button>
+            <button 
+              onClick={() => navigate('/application-history')}
+              style={{
+                backgroundColor: '#f1f5f9',
+                color: '#2c3e50',
+                border: 'none',
+                padding: '12px 20px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 500,
+                fontSize: '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s ease',
+                ':hover': {
+                  backgroundColor: '#e2e8f0'
+                }
+              }}
+            >
+              Application History
+            </button>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        {appliedSchemes.length > 0 && (
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '25px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+          }}>
+            <h3 style={{ 
+              margin: '0 0 20px 0',
+              color: '#2c3e50',
+              fontSize: '1.2rem'
+            }}>
+              Recent Scheme Applications
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {appliedSchemes.slice(0, 3).map((scheme, index) => (
+                <div 
+                  key={index}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '15px',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '8px',
+                    transition: 'all 0.2s ease',
+                    ':hover': {
+                      backgroundColor: '#f1f5f9'
+                    }
+                  }}
+                >
+                  <div>
+                    <p style={{ 
+                      margin: '0 0 5px 0',
+                      fontWeight: 500,
+                      color: '#2c3e50'
+                    }}>
+                      {scheme.schemeName}
+                    </p>
+                    <p style={{ 
+                      margin: 0,
+                      fontSize: '0.85rem',
+                      color: '#7f8c8d'
+                    }}>
+                      Applied on {new Date(scheme.appliedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <span style={{
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    fontSize: '0.8rem',
+                    fontWeight: 500,
+                    backgroundColor: 
+                      scheme.status === 'Accepted' ? '#e8f5e9' : 
+                      scheme.status === 'Rejected' ? '#ffebee' : '#fff8e1',
+                    color: 
+                      scheme.status === 'Accepted' ? '#2e7d32' : 
+                      scheme.status === 'Rejected' ? '#c62828' : '#f57c00'
+                  }}>
+                    {scheme.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
-};
-
-// Styles for reuse
-const buttonStyle = {
-  backgroundColor: 'var(--primary-color)',
-  color: 'white',
-  border: 'none',
-  padding: '10px 15px',
-  borderRadius: '5px',
-  cursor: 'pointer',
-  transition: 'background-color 0.3s'
-};
-
-const tableHeaderStyle = {
-  textAlign: 'left',
-  padding: '12px 15px',
-  borderBottom: '1px solid #ddd',
-  backgroundColor: '#f8f9fa'
-};
-
-const tableCellStyle = {
-  padding: '12px 15px',
-  borderBottom: '1px solid #ddd'
 };
 
 export default Home;
