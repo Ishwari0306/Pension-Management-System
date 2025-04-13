@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { FiHome, FiUser, FiLogOut } from 'react-icons/fi';
+import logo from "../assets/Logo.jpg";
+
 
 const HeaderPMS = () => {
   const navigate = useNavigate();
@@ -39,16 +41,26 @@ const HeaderPMS = () => {
           onClick={() => navigate(userRole === 'admin' ? '/admin/home' : '/home')}
         >
           <div style={{
-            backgroundColor: '#3498db',
             width: '40px',
             height: '40px',
             borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginRight: '12px'
+            marginRight: '12px',
+            overflow: 'hidden'
           }}>
-            <span style={{ fontSize: '20px', fontWeight: 'bold' }}>PMS</span>
+            <img 
+              src={logo} 
+              alt="Pension Management System Logo"
+              style={{
+                height:'140%',
+                width:'auto',
+                maxWidth:'200px',
+                objectFit:'contain',
+                
+              }}
+            />
           </div>
           <h1 style={{ 
             margin: 0, 

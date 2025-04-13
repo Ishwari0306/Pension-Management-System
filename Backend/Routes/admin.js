@@ -5,15 +5,30 @@ const adminModel=require("../models/adminModel");
 const CompanyModel=require("../models/CompanyModel");
 const EmployeeModel=require("../models/EmployeeModel");
 const { authenticate }=require("../middlewares/adminAuth");
+const { v4:uuidv4 }=require('uuid');
 const bcrypt=require("bcrypt");
 
 const JWT_admin_secret="hash123";
+
+async function generateUniqueAdminID() {
+    let isUnique = false;
+    let newAdminID;
+
+    while (!isUnique) {
+        newAdminID = `ADM-${uuidv4().split('-')[0].toUpperCase()}`; 
+        const existingAdmin = await adminModel.findOne({ adminId: newAdminID });
+        if (!existingAdmin) isUnique = true; // Ensure ID is unique
+    }
+
+    return newAdminID;
+}
 
 adminRouter.post("/signup",async(req,res)=>{
 
     const name=req.body.name;
     const email=req.body.email;
     const password=req.body.password;
+    const adminId=await generateUniqueAdminID();
     const companyName=req.body.companyName;
 
     try{
@@ -34,11 +49,13 @@ adminRouter.post("/signup",async(req,res)=>{
             name:name,
             email:email,
             password:hashedPassword,
+            adminId:adminId,
             companyId:company._id
         });
 
         const token=jwt.sign({
             id:newAdmin._id,
+            adminId:newAdmin.adminId,
             companyId:newAdmin.companyId,
         },JWT_admin_secret);
         
@@ -74,6 +91,7 @@ adminRouter.post("/signin",async(req,res)=>{
             if(passwordMatch){
                 const token=jwt.sign({
                     id:admin._id,
+                    adminId:admin.adminId,
                     companyId:admin.companyId,
                 },JWT_admin_secret);
                 return res.json({
@@ -125,8 +143,8 @@ adminRouter.get("/employees",authenticate,async(req,res)=>{
 
 adminRouter.get("/profile", authenticate, async (req, res) => {
     try {
-      const { companyId } = req.user;
-      const admin = await adminModel.findOne({ companyId });
+      const { adminId,companyId } = req.user;
+      const admin = await adminModel.findOne({ adminId });
       
       if (!admin) {
         return res.status(404).json({ msg: "Admin not found" });
@@ -141,8 +159,11 @@ adminRouter.get("/profile", authenticate, async (req, res) => {
       const totalEmployees = await EmployeeModel.countDocuments( {companyId} );
 
       res.json({
-          name: company.name,
+          name: admin.name,
+          email:admin.email,
+          companyName:company.name,
           totalEmployees,
+          companyAddress:company.address,
           activeSchemes: company.activeSchemes || 0,
       });
       
