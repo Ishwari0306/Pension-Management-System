@@ -46,7 +46,7 @@ const ApplicationHistory = () => {
         switch (status.toLowerCase()) {
             case 'pending':
                 return 'status-pending';
-            case 'approved':
+            case 'accepted':
                 return 'status-approved';
             case 'rejected':
                 return 'status-rejected';

@@ -258,41 +258,44 @@ const Profile = () => {
     if (!userData?.dateOfBirth || appliedSchemes.length === 0) return 0;
     
     const yearsToRetirement = calculateYearsToRetirement();
-    if (yearsToRetirement <= 0) return 0; // Already retired
-  
-    // Calculate future value for each scheme separately
-    const today = new Date();
-    const totalFutureValue = appliedSchemes
-      .filter(scheme => scheme.status === 'Accepted')
-      .reduce((total, scheme) => {
-        const appliedDate = new Date(scheme.appliedAt);
-        const yearsInvested = today.getFullYear() - appliedDate.getFullYear();
-        const yearsRemaining = Math.min(
-          scheme.tenureYears - yearsInvested,
-          yearsToRetirement
-        );
-  
-        if (yearsRemaining <= 0) {
-          return total; // Scheme has already completed its tenure
-        }
-  
-        let futureValue = 0;
-        const annualContribution = (scheme.investmentAmount || 0) * 12;
-        
-        for (let i = 0; i < yearsRemaining; i++) {
-          futureValue = (futureValue + annualContribution) * (1 + scheme.interestRate);
-        }
-  
-        return total + futureValue;
-      }, 0);
-  
-    // Calculate monthly pension (using scheme-specific tenure years for payout duration)
-    // Find the longest tenure among accepted schemes as the payout duration
-    const payoutDuration = appliedSchemes
-      .filter(scheme => scheme.status === 'Accepted')
-      .reduce((max, scheme) => Math.max(max, scheme.tenureYears || 25), 25); // Default to 25 years
-  
-    return totalFutureValue / (payoutDuration * 12);
+    if (yearsToRetirement <= 0) return 0;
+
+    // Calculate future value with monthly compounding
+    const monthlyRate = (scheme) => scheme.interestRate / 12 / 100;
+    const totalMonths = yearsToRetirement * 12;
+
+    const futureValue = appliedSchemes
+        .filter(scheme => scheme.status === 'Accepted')
+        .reduce((total, scheme) => {
+            const rate = monthlyRate(scheme);
+            const monthsRemaining = Math.min(
+                scheme.tenureYears * 12, 
+                totalMonths
+            );
+            const monthlyContribution = scheme.investmentAmount;
+            
+            // Future value of an annuity formula
+            const fv = monthlyContribution * 
+                (Math.pow(1 + rate, monthsRemaining) - 1) / rate;
+            
+            return total + fv;
+        }, 0);
+
+    // Estimate monthly pension (divide by scheme duration in months)
+    const longestTenureMonths = Math.max(
+        ...appliedSchemes
+            .filter(scheme => scheme.status === 'Accepted')
+            .map(scheme => scheme.tenureYears * 12),
+        300 // Default: 25 years (300 months)
+    );
+
+    return futureValue / longestTenureMonths;
+  };
+
+  const calculateReadinessScore = () => {
+    const targetPension = userData?.salary * 0.7; // 70% of salary
+    const estimated = calculateEstimatedPension();
+    return Math.min(100, Math.round((estimated / targetPension) * 100));
   };
   
   
@@ -447,12 +450,6 @@ const Profile = () => {
               />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-              <StatCard 
-                title="Estimated Pension" 
-                value={`₹${Math.round(calculateEstimatedPension()).toLocaleString('en-IN')}`} 
-                subtext="Monthly at retirement"
-                color="#27ae60"
-              />
               <StatCard 
                 title="Years to Retirement" 
                 value={calculateYearsToRetirement()} 

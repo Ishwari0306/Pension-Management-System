@@ -245,7 +245,7 @@ employeeRouter.get("/applied-schemes", authenticate, async (req, res) => {
         const schemesWithDetails = employee.appliedSchemes.map(scheme => ({
             ...scheme.toObject(),
             interestRate: scheme.schemeId?.interestRate || 0,
-            duration: scheme.schemeId?.duration || 0
+            tenureYears: scheme.schemeId?.duration || 0
         }));
 
         res.json(schemesWithDetails);

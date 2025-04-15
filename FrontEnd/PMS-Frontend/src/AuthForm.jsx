@@ -33,7 +33,7 @@ const AuthForm = ({ isAdmin, isSignup, setIsSignup,setIsAdmin,onAuthSuccess }) =
             : isSignup ? <EmployeeSignup onAuthSuccess={onAuthSuccess} /> 
             : (<EmployeeLogin onAuthSuccess={onAuthSuccess} />
 
-            )};
+            )}
             <p className="switch-mode">
               {isSignup ? "Already have an account? " : "Don't have an account? "}
               <button className="switch-button" onClick={() => setIsSignup(!isSignup)}>

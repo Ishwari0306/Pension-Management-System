@@ -136,7 +136,7 @@ const AdminProfile = () => {
 
   return (
     <div className="profile-container">
-      <h1 className="profile-title">Admin Dashboard</h1>
+      <h1 className="profile-title">Admin Profile</h1>
       
       <div className="profile-tabs">
         <button 
@@ -355,7 +355,7 @@ const AdminProfile = () => {
                               </div>
                               <div className="scheme-info">
                                 <label>Company Contribution</label>
-                                <p>₹{((employees.salary || 0) * 0.12).toLocaleString('en-IN')}</p>
+                                <p>₹{((scheme.investmentAmount || 0) * 0.12).toLocaleString('en-IN')}</p>
                               </div>
                             </div>
                             

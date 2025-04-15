@@ -82,17 +82,20 @@ const ApplyPensionScheme = () => {
     };
 
     const calculateMinMaxForScheme = (scheme) => {
-        const min = scheme.minSalaryPercentage > 0 
-            ? Math.max(
-                scheme.minimumInvestment,
-                salary * scheme.minSalaryPercentage / 100
-            )
+        // Calculate raw values
+        const minBasedOnSalary = salary * scheme.minSalaryPercentage / 100;
+        const maxBasedOnSalary = salary * scheme.maxSalaryPercentage / 100;
+        
+        // Determine effective minimum
+        const min = scheme.minSalaryPercentage > 0
+            ? Math.max(scheme.minimumInvestment, minBasedOnSalary)
             : scheme.minimumInvestment;
-            
-        const max = Math.min(
-            scheme.maximumInvestment,
-            salary * scheme.maxSalaryPercentage / 100
-        );
+        
+        // Determine effective maximum (must be >= min)
+        let max = Math.min(scheme.maximumInvestment, maxBasedOnSalary);
+        
+        // Ensure max is never less than min
+        max = Math.max(min, max);
         
         return { min, max };
     };
